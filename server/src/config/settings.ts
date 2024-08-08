@@ -6,6 +6,14 @@ export interface ISettings {
   hash: {
     saltRounds: number;
   };
+  jwt: {
+    accessToken: {
+      secret: string;
+    };
+    refreshToken: {
+      secret: string;
+    };
+  };
 }
 
 export function getEnvVariable(name: string, defaultValue?: string) {
@@ -24,5 +32,13 @@ export default {
   },
   hash: {
     saltRounds: parseInt(getEnvVariable("SALT_ROUNDS", "10")),
+  },
+  jwt: {
+    accessToken: {
+      secret: getEnvVariable("ACCESS_TOKEN_SECRET", "access-token-secret"),
+    },
+    refreshToken: {
+      secret: getEnvVariable("REFRESH_TOKEN_SECRET", "refresh-token-secret"),
+    },
   },
 } satisfies ISettings;

@@ -21,6 +21,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@hono/swagger-ui": "^0.4.0",
     "@hono/zod-validator": "^0.2.2",
     "bcrypt": "^5.1.1",
     "drizzle-orm": "^0.32.2",

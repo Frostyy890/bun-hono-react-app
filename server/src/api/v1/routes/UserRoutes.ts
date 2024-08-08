@@ -1,10 +1,7 @@
 import { Hono } from "hono";
 import UserService from "../services/UserService";
 import { zValidator } from "@hono/zod-validator";
-import {
-  createUserSchema,
-  updateUserSchema,
-} from "../validations/UserValidations";
+import { createUserSchema, updateUserSchema } from "../validations/UserValidations";
 import { UserDto } from "../dto/UserDto";
 
 const userRoutes = new Hono()

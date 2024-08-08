@@ -9,23 +9,15 @@ import settings from "../../../config/settings";
 async function getAllUsers(): Promise<TUser[]> {
   return await db.select().from(usersTable);
 }
-async function getUserByAttribute<K extends keyof TUser>(
-  attribute: K,
-  value: TUser[K]
-) {
-  const users = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable[attribute], value));
-  return users[0];
+async function getUserByAttribute<K extends keyof TUser>(attribute: K, value: TUser[K]) {
+  const users = await db.select().from(usersTable).where(eq(usersTable[attribute], value));
+  const user = users[0];
+  if (user && Object.keys(user).length === 0) return null;
+  return user;
 }
-async function getUserById(id: TUser["id"]): Promise<TUser> {
-  const usersById = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, id));
-  if (usersById.length < 1)
-    throw new HTTPException(404, { message: "User not found" });
+async function getUserById(userId: TUser["id"]): Promise<TUser> {
+  const usersById = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (usersById.length < 1) throw new HTTPException(404, { message: "User not found" });
   return usersById[0];
 }
 async function createUser(data: TCreateUserInput): Promise<TUser> {
@@ -33,21 +25,13 @@ async function createUser(data: TCreateUserInput): Promise<TUser> {
   const users = await db.insert(usersTable).values(data).returning();
   return users[0];
 }
-async function updateUser(
-  id: TUser["id"],
-  data: TUpdateUserInput
-): Promise<TUser> {
-  if (data.password)
-    data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  const users = await db
-    .update(usersTable)
-    .set(data)
-    .where(eq(usersTable.id, id))
-    .returning();
+async function updateUser(userId: TUser["id"], data: TUpdateUserInput): Promise<TUser> {
+  if (data.password) data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
+  const users = await db.update(usersTable).set(data).where(eq(usersTable.id, userId)).returning();
   return users[0];
 }
-async function deleteUser(id: TUser["id"]) {
-  await db.delete(usersTable).where(eq(usersTable.id, id)).returning();
+async function deleteUser(userId: TUser["id"]) {
+  await db.delete(usersTable).where(eq(usersTable.id, userId)).returning();
 }
 
 export default {

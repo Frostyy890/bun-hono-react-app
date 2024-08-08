@@ -1,11 +1,4 @@
-import {
-  pgTable,
-  serial,
-  varchar,
-  pgEnum,
-  timestamp,
-  integer,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, pgEnum, timestamp, integer } from "drizzle-orm/pg-core";
 
 export enum UserRole {
   ADMIN = "admin",
