@@ -1,0 +1,32 @@
+{
+  "name": "bun-hono-api",
+  "module": "src/app.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun server/src/app.ts",
+    "dev": "bun --watch server/src/app.ts",
+    "docker:dev": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:purge": "docker compose down -v",
+    "migrations:generate": "bun drizzle-kit generate",
+    "migrations:apply": "bun server/src/db/migrate.ts",
+    "db:studio": "bun drizzle-kit studio"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.23.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.2.2",
+    "bcrypt": "^5.1.1",
+    "drizzle-orm": "^0.32.2",
+    "drizzle-zod": "^0.5.1",
+    "hono": "^4.5.3",
+    "postgres": "^3.4.4",
+    "zod": "^3.23.8"
+  }
+}
