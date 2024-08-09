@@ -26,9 +26,9 @@ bun run db:studio # runs database studio
 
 bun run migrations:generate # generates migrations based on schema changes
 
-bun docker:down # run this command to stop running the database container
+bun run docker:down # run this command to stop running the database container
 
-bun docker:purge # stops running database container and removes its volumes !Run only if necessary
+bun run docker:purge # stops running database container and removes its volumes !Run only if necessary
 
 ```
 
