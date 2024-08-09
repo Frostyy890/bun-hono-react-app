@@ -5,7 +5,7 @@ import appRoutes from "./api/v1/routes/AppRoutes";
 
 const app = new Hono();
 
-app.use("*", logger());
+app.use(logger());
 
 app.route("/api/v1", appRoutes);
 
