@@ -3,6 +3,7 @@ import UserService from "./UserService";
 import TokenService from "./TokenService";
 import bcrypt from "bcrypt";
 import { HTTPException } from "hono/http-exception";
+import HTTPStatusCode from "../constants/HTTPStatusCode";
 import settings from "../../../config/settings";
 
 async function register(data: TRegisterInput) {
@@ -17,7 +18,7 @@ async function register(data: TRegisterInput) {
 async function login(data: TLoginInput) {
   const user = await UserService.getUserByAttribute("username", data.username);
   if (!user || !(await bcrypt.compare(data.password, user.password))) {
-    throw new HTTPException(401, { message: "Invalid credentials" });
+    throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Invalid credentials" });
   }
   const tokens = await TokenService.generateAuthTokens({
     sub: { userId: user.id, refreshTokenVersion: user.refreshTokenVersion },
@@ -27,11 +28,12 @@ async function login(data: TLoginInput) {
 }
 
 async function refresh(refreshToken: string | undefined) {
-  if (!refreshToken) throw new HTTPException(401, { message: "Unauthorized" });
+  if (!refreshToken)
+    throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
   const sub = (await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret)).sub;
   const user = await UserService.getUserByAttribute("id", sub.userId);
   if (!user || user.refreshTokenVersion !== sub.refreshTokenVersion) {
-    throw new HTTPException(401, { message: "Unauthorized" });
+    throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
   }
   const tokens = await TokenService.generateAuthTokens({
     sub: { userId: user.id, refreshTokenVersion: user.refreshTokenVersion },

@@ -3,6 +3,7 @@ import UserService from "../services/UserService";
 import validateRequest from "../middlewares/ValidateRequest";
 import { createUserSchema, updateUserSchema } from "../validations/UserValidations";
 import { UserDto } from "../dto/UserDto";
+import HTTPStatusCode from "../constants/HTTPStatusCode";
 
 const userRoutes = new Hono()
   .get("/", async (c) => {
@@ -18,7 +19,7 @@ const userRoutes = new Hono()
   .post("/", validateRequest(createUserSchema), async (c) => {
     const data = c.req.valid("json");
     const newUser = new UserDto(await UserService.createUser(data));
-    return c.json({ user: newUser }, { status: 201 });
+    return c.json({ user: newUser }, { status: HTTPStatusCode.CREATED });
   })
   .patch("/:id{[0-9]+}", validateRequest(updateUserSchema), async (c) => {
     const id = Number.parseInt(c.req.param("id"));

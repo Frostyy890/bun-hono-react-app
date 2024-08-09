@@ -5,6 +5,7 @@ import AuthService from "../services/AuthService";
 import { UserDto } from "../dto/UserDto";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { CookieOptions } from "hono/utils/cookie";
+import HTTPStatusCode from "../constants/HTTPStatusCode";
 
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
@@ -41,7 +42,7 @@ const authRoutes = new Hono()
     const { isLogoutFromAll } = c.req.valid("json");
     await AuthService.logout(refreshToken, isLogoutFromAll);
     deleteCookie(c, "refreshToken", COOKIE_OPTIONS);
-    return c.json({}, { status: 204 });
+    return c.json({}, { status: HTTPStatusCode.NO_CONTENT });
   });
 
 export default authRoutes;

@@ -3,6 +3,7 @@ import { db } from "../../../db/connection";
 import { usersTable } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import HTTPStatusCode from "../constants/HTTPStatusCode";
 import bcrypt from "bcrypt";
 import settings from "../../../config/settings";
 
@@ -17,7 +18,9 @@ async function getUserByAttribute<K extends keyof TUser>(attribute: K, value: TU
 }
 async function getUserById(userId: TUser["id"]): Promise<TUser> {
   const usersById = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (usersById.length < 1) throw new HTTPException(404, { message: "User not found" });
+  if (usersById.length < 1) {
+    throw new HTTPException(HTTPStatusCode.NOT_FOUND, { message: "User not found" });
+  }
   return usersById[0];
 }
 async function createUser(data: TCreateUserInput): Promise<TUser> {
