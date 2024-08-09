@@ -28,7 +28,7 @@ async function login(data: TLoginInput) {
 
 async function refresh(refreshToken: string | undefined) {
   if (!refreshToken) throw new HTTPException(401, { message: "Unauthorized" });
-  const { sub } = await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret);
+  const sub = (await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret)).sub;
   const user = await UserService.getUserByAttribute("id", sub.userId);
   if (!user || user.refreshTokenVersion !== sub.refreshTokenVersion) {
     throw new HTTPException(401, { message: "Unauthorized" });
@@ -42,7 +42,7 @@ async function refresh(refreshToken: string | undefined) {
 
 async function logout(refreshToken: string, isLogoutFromAll: boolean = false) {
   if (isLogoutFromAll) {
-    const { sub } = TokenService.decodeToken(refreshToken);
+    const sub = TokenService.decodeToken(refreshToken).sub;
     const user = await UserService.getUserByAttribute("id", sub.userId);
     if (user) {
       await UserService.updateUser(user.id, { refreshTokenVersion: user.refreshTokenVersion + 1 });
