@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import UserService from "../services/UserService";
-import { zValidator } from "@hono/zod-validator";
+import validateRequest from "../middlewares/ValidateRequest";
 import { createUserSchema, updateUserSchema } from "../validations/UserValidations";
 import { UserDto } from "../dto/UserDto";
 
@@ -15,12 +15,12 @@ const userRoutes = new Hono()
     const user = new UserDto(await UserService.getUserById(id));
     return c.json({ user });
   })
-  .post("/", zValidator("json", createUserSchema), async (c) => {
+  .post("/", validateRequest(createUserSchema), async (c) => {
     const data = c.req.valid("json");
     const newUser = new UserDto(await UserService.createUser(data));
     return c.json({ user: newUser }, { status: 201 });
   })
-  .patch("/:id{[0-9]+}", zValidator("json", updateUserSchema), async (c) => {
+  .patch("/:id{[0-9]+}", validateRequest(updateUserSchema), async (c) => {
     const id = Number.parseInt(c.req.param("id"));
     const data = c.req.valid("json");
     await UserService.getUserById(id);

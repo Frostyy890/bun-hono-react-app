@@ -17,7 +17,7 @@ async function register(data: TRegisterInput) {
 async function login(data: TLoginInput) {
   const user = await UserService.getUserByAttribute("username", data.username);
   if (!user || !(await bcrypt.compare(data.password, user.password))) {
-    throw new HTTPException(400, { message: "Invalid credentials" });
+    throw new HTTPException(401, { message: "Invalid credentials" });
   }
   const tokens = await TokenService.generateAuthTokens({
     sub: { userId: user.id, refreshTokenVersion: user.refreshTokenVersion },

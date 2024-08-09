@@ -9,12 +9,9 @@ export const createUserSchema = createInsertSchema(usersTable)
     updatedAt: true,
   })
   .extend({
-    username: z
-      .string()
-      .min(3, "Username is too short")
-      .max(255, "Username is too long"),
-    email: z.string().email().max(255, "Email is too long"),
-    password: z.string().min(6, "Password is too short"),
+    username: z.string().min(3, "too short").max(255, "too long"),
+    email: z.string().email().max(255, "too long"),
+    password: z.string().min(6, "too short"),
   });
 export const updateUserSchema = createUserSchema.partial();
 export const selectUserSchema = createSelectSchema(usersTable);
