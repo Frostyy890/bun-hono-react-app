@@ -34,7 +34,7 @@ async function updateUser(userId: TUser["id"], data: TUpdateUserInput): Promise<
   return users[0];
 }
 async function deleteUser(userId: TUser["id"]) {
-  await db.delete(usersTable).where(eq(usersTable.id, userId)).returning();
+  await db.delete(usersTable).where(eq(usersTable.id, userId));
 }
 
 export default {
