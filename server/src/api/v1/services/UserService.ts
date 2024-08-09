@@ -13,7 +13,7 @@ async function getAllUsers(): Promise<TUser[]> {
 async function getUserByAttribute<K extends keyof TUser>(attribute: K, value: TUser[K]) {
   const users = await db.select().from(usersTable).where(eq(usersTable[attribute], value));
   const user = users[0];
-  if (user && Object.keys(user).length === 0) return null;
+  if (user && Object.keys(user).length < 1) return null;
   return user;
 }
 async function getUserById(userId: TUser["id"]): Promise<TUser> {
