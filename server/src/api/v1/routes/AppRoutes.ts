@@ -6,15 +6,13 @@ import settings from "../../../config/settings";
 import AuthMiddleware from "../middlewares/AuthMiddleware";
 import { UserRole } from "../../../db/schema";
 
-const appRoutes = new Hono<{ Variables: JwtVariables }>();
-// Protected routes
-appRoutes.use(
-  "/users/*",
-  jwt({ secret: settings.jwt.accessToken.secret }),
-  AuthMiddleware.authorizeRole([UserRole.ADMIN])
-);
-
-appRoutes.route("/users", userRoutes);
-appRoutes.route("/auth", authRoutes);
+const appRoutes = new Hono<{ Variables: JwtVariables }>()
+  .use(
+    "/users/*",
+    jwt({ secret: settings.jwt.accessToken.secret }),
+    AuthMiddleware.authorizeRole([UserRole.ADMIN])
+  )
+  .route("/users", userRoutes)
+  .route("/auth", authRoutes);
 
 export default appRoutes;
