@@ -12,6 +12,7 @@ app.onError((err, c) => {
   const { message, status } = errorHandler(err);
   return c.json({ message }, { status });
 });
+app.notFound((c) => c.json({ message: "Not Found" }, { status: 404 }));
 
 const apiRoutes = app.basePath("/api").route("/v1", appRoutes_v1);
 
