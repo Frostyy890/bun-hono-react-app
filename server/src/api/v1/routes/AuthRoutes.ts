@@ -20,21 +20,21 @@ const authRoutes = new Hono()
     const { user, tokens } = await AuthService.register(data);
     const { accessToken, refreshToken } = tokens;
     setCookie(c, "refreshToken", refreshToken, COOKIE_OPTIONS);
-    return c.json({ user: new UserDto(user), token: accessToken });
+    return c.json({ user: new UserDto(user), token: accessToken }, HTTPStatusCode.OK);
   })
   .post("/login", validateRequest(loginSchema), async (c) => {
     const data = c.req.valid("json");
     const { user, tokens } = await AuthService.login(data);
     const { accessToken, refreshToken } = tokens;
     setCookie(c, "refreshToken", refreshToken, COOKIE_OPTIONS);
-    return c.json({ user: new UserDto(user), token: accessToken });
+    return c.json({ user: new UserDto(user), token: accessToken }, HTTPStatusCode.OK);
   })
   .post("/refresh-token", async (c) => {
     const refreshToken = getCookie(c, "refreshToken");
     const tokens = await AuthService.refresh(refreshToken);
     const { accessToken, refreshToken: newRefreshToken } = tokens;
     setCookie(c, "refreshToken", newRefreshToken, COOKIE_OPTIONS);
-    return c.json({ token: accessToken });
+    return c.json({ token: accessToken }, HTTPStatusCode.OK);
   })
   .post("/logout", validateRequest(logoutSchema), async (c) => {
     const refreshToken = getCookie(c, "refreshToken");
@@ -42,7 +42,7 @@ const authRoutes = new Hono()
     const { isLogoutFromAll } = c.req.valid("json");
     await AuthService.logout(refreshToken, isLogoutFromAll);
     deleteCookie(c, "refreshToken", COOKIE_OPTIONS);
-    return c.json({}, { status: HTTPStatusCode.NO_CONTENT });
+    return c.json({}, HTTPStatusCode.NO_CONTENT);
   });
 
 export default authRoutes;

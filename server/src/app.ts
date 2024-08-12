@@ -19,9 +19,9 @@ app.use(
 );
 app.onError((err, c) => {
   const { message, status } = errorHandler(err);
-  return c.json({ message }, { status });
+  return c.json({ message }, status);
 });
-app.notFound((c) => c.json({ message: "Not Found" }, { status: 404 }));
+app.notFound((c) => c.json({ message: "Not Found" }, 404));
 
 const apiRoutes_v1 = app.basePath("/api/v1").route("/users", userRoutes).route("/auth", authRoutes);
 // Server client code !For production
