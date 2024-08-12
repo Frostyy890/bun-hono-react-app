@@ -13,8 +13,9 @@ const userRoutes = new Hono()
   })
   .get("/:id{[0-9]+}", async (c) => {
     const id = Number.parseInt(c.req.param("id"));
-    const user = new UserDto(await UserService.getUserById(id));
-    return c.json({ user }, HTTPStatusCode.OK);
+    const maybeUser = await UserService.getUserByAttribute("id", id);
+    const user = UserService.checkUserOutput(maybeUser);
+    return c.json({ user: new UserDto(user) }, HTTPStatusCode.OK);
   })
   .post("/", validateRequest(createUserSchema), async (c) => {
     const data = c.req.valid("json");
@@ -24,14 +25,14 @@ const userRoutes = new Hono()
   .patch("/:id{[0-9]+}", validateRequest(updateUserSchema), async (c) => {
     const id = Number.parseInt(c.req.param("id"));
     const data = c.req.valid("json");
-    await UserService.getUserById(id);
-    const updatedUser = new UserDto(await UserService.updateUser(id, data));
-    return c.json({ user: updatedUser }, HTTPStatusCode.OK);
+    const maybeUpdatedUser = await UserService.updateUser(id, data);
+    const updatedUser = UserService.checkUserOutput(maybeUpdatedUser);
+    return c.json({ user: new UserDto(updatedUser) }, HTTPStatusCode.OK);
   })
   .delete("/:id{[0-9]+}", async (c) => {
     const id = Number.parseInt(c.req.param("id"));
-    await UserService.getUserById(id);
-    await UserService.deleteUser(id);
+    const maybeDeletedUser = await UserService.deleteUser(id);
+    UserService.checkUserOutput(maybeDeletedUser);
     return c.json({ message: "User deleted" }, HTTPStatusCode.OK);
   });
 

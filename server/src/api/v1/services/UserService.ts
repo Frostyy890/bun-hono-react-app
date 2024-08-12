@@ -10,38 +10,39 @@ import settings from "../../../config/settings";
 async function getAllUsers(): Promise<TUser[]> {
   return await db.select().from(usersTable);
 }
-async function getUserByAttribute<K extends keyof TUser>(attribute: K, value: TUser[K]) {
-  const users = await db.select().from(usersTable).where(eq(usersTable[attribute], value));
-  const user = users[0];
-  if (user && Object.keys(user).length < 1) return null;
+async function getUserByAttribute<K extends keyof TUser>(
+  attribute: K,
+  value: TUser[K]
+): Promise<TUser | undefined> {
+  const user = (await db.select().from(usersTable).where(eq(usersTable[attribute], value)))[0];
+  if (!user) return undefined;
   return user;
-}
-async function getUserById(userId: TUser["id"]): Promise<TUser> {
-  const usersById = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (usersById.length < 1) {
-    throw new HTTPException(HTTPStatusCode.NOT_FOUND, { message: "User not found" });
-  }
-  return usersById[0];
 }
 async function createUser(data: TCreateUserInput): Promise<TUser> {
   data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  const users = await db.insert(usersTable).values(data).returning();
-  return users[0];
+  const user = (await db.insert(usersTable).values(data).returning())[0];
+  return user;
 }
-async function updateUser(userId: TUser["id"], data: TUpdateUserInput): Promise<TUser> {
+async function updateUser(userId: TUser["id"], data: TUpdateUserInput): Promise<TUser | undefined> {
   if (data.password) data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  const users = await db.update(usersTable).set(data).where(eq(usersTable.id, userId)).returning();
-  return users[0];
+  const user = (
+    await db.update(usersTable).set(data).where(eq(usersTable.id, userId)).returning()
+  )[0];
+  return user;
 }
-async function deleteUser(userId: TUser["id"]) {
-  await db.delete(usersTable).where(eq(usersTable.id, userId));
+async function deleteUser(userId: TUser["id"]): Promise<TUser | undefined> {
+  return (await db.delete(usersTable).where(eq(usersTable.id, userId)).returning())[0];
+}
+function checkUserOutput(user: TUser | undefined) {
+  if (!user) throw new HTTPException(HTTPStatusCode.NOT_FOUND, { message: "User not found" });
+  return user;
 }
 
 export default {
   getAllUsers,
-  getUserById,
   getUserByAttribute,
   createUser,
   updateUser,
   deleteUser,
+  checkUserOutput,
 };
