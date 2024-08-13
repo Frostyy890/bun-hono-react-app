@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, pgEnum, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, pgEnum, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 
 export enum UserRole {
   ADMIN = "admin",
@@ -14,6 +14,7 @@ export const usersTable = pgTable("Users", {
   password: varchar("password", { length: 255 }).notNull(),
   role: userRoles("role").default(UserRole.USER).notNull(),
   refreshTokenVersion: integer("refreshTokenVersion").default(1).notNull(),
+  isBlacklisted: boolean("isBlacklisted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()

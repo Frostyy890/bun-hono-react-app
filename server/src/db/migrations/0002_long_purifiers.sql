@@ -1,0 +1,1 @@
+ALTER TABLE "Users" ADD COLUMN "isBlacklisted" boolean DEFAULT false NOT NULL;

@@ -8,6 +8,34 @@
       "when": 1723021870387,
       "tag": "0000_mean_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1723532053583,
+      "tag": "0001_aromatic_zombie",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1723542534045,
+      "tag": "0002_long_purifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1723544636429,
+      "tag": "0003_solid_bloodstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1723548735194,
+      "tag": "0004_purple_bishop",
+      "breakpoints": true
     }
   ]
 }

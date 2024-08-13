@@ -1,0 +1,1 @@
+ALTER TABLE "Blacklist" ADD COLUMN "expiresAt" timestamp DEFAULT '2024-08-20 10:23:56.420' NOT NULL;
