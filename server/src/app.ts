@@ -2,19 +2,19 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import settings from "./config/settings";
 import errorHandler from "./api/v1/middlewares/ErrorHandler";
-import { serveStatic } from "hono/bun";
 import authRoutes from "./api/v1/routes/AuthRoutes";
 import userRoutes from "./api/v1/routes/UserRoutes";
-import { type JwtVariables, jwt } from "hono/jwt";
 import AuthMiddleware from "./api/v1/middlewares/AuthMiddleware";
+import type { TAuthEnv } from "./api/v1/types/TAuth";
 import { UserRole } from "./db/schema";
+import { serveStatic } from "hono/bun";
 
-const app = new Hono<{ Variables: JwtVariables }>();
+const app = new Hono<TAuthEnv>();
 
 app.use(logger());
 app.use(
   "api/v1/users/*",
-  jwt({ secret: settings.jwt.accessToken.secret }),
+  AuthMiddleware.authenticateToken,
   AuthMiddleware.authorizeRole([UserRole.ADMIN])
 );
 app.onError((err, c) => {

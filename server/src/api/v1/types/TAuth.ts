@@ -19,3 +19,9 @@ export type TAuthTokens = {
   accessToken: string;
   refreshToken: string;
 };
+
+export type TAuthEnv = {
+  Variables: {
+    user: TUser | undefined;
+  };
+};
