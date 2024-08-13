@@ -4,6 +4,7 @@ import { createUserSchema } from "./UserValidations";
 export const registerSchema = createUserSchema.omit({
   role: true,
   refreshTokenVersion: true,
+  isBlacklisted: true,
 });
 export const loginSchema = registerSchema.omit({ email: true });
 

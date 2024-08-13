@@ -26,12 +26,12 @@ export function getEnvVariable(name: string, defaultValue?: string) {
 }
 
 export default {
-  port: parseInt(getEnvVariable("PORT", "3000")),
+  port: Number.parseInt(getEnvVariable("PORT", "3000")),
   db: {
     url: getEnvVariable("DATABASE_URL"),
   },
   hash: {
-    saltRounds: parseInt(getEnvVariable("SALT_ROUNDS", "10")),
+    saltRounds: Number.parseInt(getEnvVariable("SALT_ROUNDS", "10")),
   },
   jwt: {
     accessToken: {
