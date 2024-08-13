@@ -36,6 +36,13 @@
       "when": 1723548735194,
       "tag": "0004_purple_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1723576661966,
+      "tag": "0005_naive_stingray",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "Blacklist" ALTER COLUMN "expiresAt" DROP DEFAULT;
