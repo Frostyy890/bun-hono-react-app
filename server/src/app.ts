@@ -4,6 +4,7 @@ import settings from "./config/settings";
 import errorHandler from "./api/v1/middlewares/ErrorHandler";
 import authRoutes from "./api/v1/routes/AuthRoutes";
 import userRoutes from "./api/v1/routes/UserRoutes";
+import blacklistRoutes from "./api/v1/routes/BlacklistRoutes";
 import AuthMiddleware from "./api/v1/middlewares/AuthMiddleware";
 import type { TAuthEnv } from "./api/v1/types/TAuth";
 import { UserRole } from "./db/schema";
@@ -23,7 +24,11 @@ app.onError((err, c) => {
 });
 app.notFound((c) => c.json({ message: "Not Found" }, 404));
 
-const apiRoutes_v1 = app.basePath("/api/v1").route("/users", userRoutes).route("/auth", authRoutes);
+const apiRoutes_v1 = app
+  .basePath("/api/v1")
+  .route("/users", userRoutes)
+  .route("/auth", authRoutes)
+  .route("/blacklist", blacklistRoutes);
 // Server client code !For production
 app.get("*", serveStatic({ root: "./client/dist" }));
 app.get("*", serveStatic({ path: "./client/dist/index.html" }));

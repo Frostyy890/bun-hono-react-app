@@ -23,10 +23,15 @@ async function createUser(data: TCreateUserInput): Promise<TUser> {
   const user = (await db.insert(usersTable).values(data).returning())[0];
   return user;
 }
-async function updateUser(userId: TUser["id"], data: TUpdateUserInput): Promise<TUser | undefined> {
+async function updateUser(
+  userId: TUser["id"],
+  data: TUpdateUserInput,
+  tx?: typeof db
+): Promise<TUser | undefined> {
+  const queryBuilder = tx ?? db;
   if (data.password) data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
   const user = (
-    await db.update(usersTable).set(data).where(eq(usersTable.id, userId)).returning()
+    await queryBuilder.update(usersTable).set(data).where(eq(usersTable.id, userId)).returning()
   )[0];
   return user;
 }
