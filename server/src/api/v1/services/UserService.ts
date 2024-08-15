@@ -12,15 +12,21 @@ async function getAllUsers(): Promise<TUser[]> {
 }
 async function getUserByAttribute<K extends keyof TUser>(
   attribute: K,
-  value: TUser[K]
+  value: TUser[K],
+  tx?: TDbClient
 ): Promise<TUser | undefined> {
-  const user = (await db.select().from(usersTable).where(eq(usersTable[attribute], value)))[0];
+  const queryBuilder = tx ?? db;
+  const [user] = await queryBuilder
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable[attribute], value));
   if (!user) return undefined;
   return user;
 }
-async function createUser(data: TCreateUserInput): Promise<TUser> {
+async function createUser(data: TCreateUserInput, tx?: TDbClient): Promise<TUser> {
+  const queryBuilder = tx ?? db;
   data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  const user = (await db.insert(usersTable).values(data).returning())[0];
+  const [user] = await queryBuilder.insert(usersTable).values(data).returning();
   return user;
 }
 async function updateUser(
@@ -30,13 +36,16 @@ async function updateUser(
 ): Promise<TUser | undefined> {
   const queryBuilder = tx ?? db;
   if (data.password) data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  const user = (
-    await queryBuilder.update(usersTable).set(data).where(eq(usersTable.id, userId)).returning()
-  )[0];
+  const [user] = await queryBuilder
+    .update(usersTable)
+    .set(data)
+    .where(eq(usersTable.id, userId))
+    .returning();
   return user;
 }
 async function deleteUser(userId: TUser["id"]): Promise<TUser | undefined> {
-  return (await db.delete(usersTable).where(eq(usersTable.id, userId)).returning())[0];
+  const [deletedUser] = await db.delete(usersTable).where(eq(usersTable.id, userId)).returning();
+  return deletedUser;
 }
 function checkUserOutput(user: TUser | undefined) {
   if (!user) throw new HTTPException(HTTPStatusCode.NOT_FOUND, { message: "User not found" });
