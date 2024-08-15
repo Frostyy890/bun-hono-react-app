@@ -1,5 +1,5 @@
 import type { TUser, TCreateUserInput, TUpdateUserInput } from "../types/TUser";
-import { db } from "../../../db/connection";
+import { db, type TDbClient } from "../../../db/connection";
 import { usersTable } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -26,7 +26,7 @@ async function createUser(data: TCreateUserInput): Promise<TUser> {
 async function updateUser(
   userId: TUser["id"],
   data: TUpdateUserInput,
-  tx?: typeof db
+  tx?: TDbClient
 ): Promise<TUser | undefined> {
   const queryBuilder = tx ?? db;
   if (data.password) data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);

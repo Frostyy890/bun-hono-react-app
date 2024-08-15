@@ -34,17 +34,20 @@ async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRec
 async function updateBlacklistRecord(
   blRecordId: TBlacklistRecord["id"],
   data: TUpdateBlacklistInput
-) {
+): Promise<TBlacklistRecord> {
   if (data.userId) {
     const maybeUser = await UserService.getUserByAttribute("id", data.userId);
     UserService.checkUserOutput(maybeUser);
   }
-  return (
+  const blacklistRecord = (
     await db.update(blacklistTable).set(data).where(eq(blacklistTable.id, blRecordId)).returning()
   )[0];
+  return checkBlacklistRecordOutput(blacklistRecord);
 }
 
-async function removeFromBlacklist(userId: TAddToBlacklistInput["userId"]) {
+async function removeFromBlacklist(
+  userId: TAddToBlacklistInput["userId"]
+): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
     const maybeUser = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
     UserService.checkUserOutput(maybeUser);
@@ -66,8 +69,11 @@ async function removeFromBlacklist(userId: TAddToBlacklistInput["userId"]) {
 
 async function getBlacklistRecordById(
   blRecordId: TBlacklistRecord["id"]
-): Promise<TBlacklistRecord | undefined> {
-  return (await db.select().from(blacklistTable).where(eq(blacklistTable.id, blRecordId)))[0];
+): Promise<TBlacklistRecord> {
+  const blacklistRecord = (
+    await db.select().from(blacklistTable).where(eq(blacklistTable.id, blRecordId))
+  )[0];
+  return checkBlacklistRecordOutput(blacklistRecord);
 }
 async function getAllBlacklistRecords(): Promise<TBlacklistRecord[]> {
   return await db.select().from(blacklistTable);
@@ -95,6 +101,16 @@ function handleBlacklistingPeriod(reason: TAddToBlacklistInput["reason"]): Date 
     default:
       return new Date(Date.now() + BlacklistExpiryPeriod.ONE_WEEK);
   }
+}
+
+function checkBlacklistRecordOutput(
+  blacklistRecord: TBlacklistRecord | undefined
+): TBlacklistRecord {
+  if (!blacklistRecord)
+    throw new HTTPException(HTTPStatusCode.NOT_FOUND, {
+      message: "Blacklist record not found",
+    });
+  return blacklistRecord;
 }
 
 export default {
