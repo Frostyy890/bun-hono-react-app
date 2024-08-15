@@ -19,50 +19,57 @@ async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRec
     }
     const maybeUser = await UserService.updateUser(data.userId, { isBlacklisted: true }, tx);
     UserService.checkUserOutput(maybeUser);
-    const blacklistRecord = (
-      await tx
-        .insert(blacklistTable)
-        .values({
-          ...data,
-          expiresAt: data.expiresAt || handleBlacklistingPeriod(data.reason),
-        })
-        .returning()
-    )[0];
+    const [blacklistRecord] = await tx
+      .insert(blacklistTable)
+      .values({
+        ...data,
+        expiresAt: data.expiresAt || handleBlacklistingPeriod(data.reason),
+      })
+      .returning();
     return blacklistRecord;
   });
 }
+
 async function updateBlacklistRecord(
   blRecordId: TBlacklistRecord["id"],
   data: TUpdateBlacklistInput
 ): Promise<TBlacklistRecord> {
-  if (data.userId) {
-    const maybeUser = await UserService.getUserByAttribute("id", data.userId);
-    UserService.checkUserOutput(maybeUser);
-  }
-  const blacklistRecord = (
-    await db.update(blacklistTable).set(data).where(eq(blacklistTable.id, blRecordId)).returning()
-  )[0];
-  return checkBlacklistRecordOutput(blacklistRecord);
+  await getBlacklistRecordById(blRecordId);
+  return await db.transaction(async (tx) => {
+    if (data.userId) {
+      const maybeUser = await UserService.getUserByAttribute("id", data.userId, tx);
+      UserService.checkUserOutput(maybeUser);
+      if (data.deletedAt !== undefined) {
+        const isBlacklisted = data.deletedAt === null;
+        await UserService.updateUser(data.userId, { isBlacklisted }, tx);
+      }
+    }
+    if (data.reason && !data.expiresAt) {
+      data.expiresAt = handleBlacklistingPeriod(data.reason);
+    }
+    const [blacklistRecord] = await tx
+      .update(blacklistTable)
+      .set(data)
+      .where(eq(blacklistTable.id, blRecordId))
+      .returning();
+    return blacklistRecord;
+  });
 }
 
-async function removeFromBlacklist(
-  userId: TAddToBlacklistInput["userId"]
-): Promise<TBlacklistRecord> {
+async function removeFromBlacklist(blRecordId: TBlacklistRecord["id"]): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
-    const maybeUser = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
+    const [maybeDeletedRecord] = await tx
+      .update(blacklistTable)
+      .set({ deletedAt: new Date() })
+      .where(eq(blacklistTable.id, blRecordId))
+      .returning();
+    const deletedRecord = checkBlacklistRecordOutput(maybeDeletedRecord);
+    const maybeUser = await UserService.updateUser(
+      deletedRecord.userId,
+      { isBlacklisted: false },
+      tx
+    );
     UserService.checkUserOutput(maybeUser);
-    const deletedRecord = (
-      await tx
-        .update(blacklistTable)
-        .set({ deletedAt: new Date() })
-        .where(eq(blacklistTable.userId, userId))
-        .returning()
-    )[0];
-    if (!deletedRecord) {
-      throw new HTTPException(HTTPStatusCode.NOT_FOUND, {
-        message: "User not found in blacklist",
-      });
-    }
     return deletedRecord;
   });
 }
@@ -70,11 +77,13 @@ async function removeFromBlacklist(
 async function getBlacklistRecordById(
   blRecordId: TBlacklistRecord["id"]
 ): Promise<TBlacklistRecord> {
-  const blacklistRecord = (
-    await db.select().from(blacklistTable).where(eq(blacklistTable.id, blRecordId))
-  )[0];
+  const [blacklistRecord] = await db
+    .select()
+    .from(blacklistTable)
+    .where(eq(blacklistTable.id, blRecordId));
   return checkBlacklistRecordOutput(blacklistRecord);
 }
+
 async function getAllBlacklistRecords(): Promise<TBlacklistRecord[]> {
   return await db.select().from(blacklistTable);
 }
