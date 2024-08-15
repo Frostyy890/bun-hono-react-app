@@ -41,6 +41,7 @@ export const blacklistTable = pgTable("Blacklist", {
   id: serial("id").primaryKey(),
   userId: integer("userId")
     .notNull()
+    .unique()
     .references(() => usersTable.id),
   reason: blacklistReasons("reason").default(BlacklistReason.NOT_SPECIFIED).notNull(),
   notes: varchar("notes", { length: 255 }).default("Not specified").notNull(),

@@ -43,6 +43,13 @@
       "when": 1723576661966,
       "tag": "0005_naive_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1723696633716,
+      "tag": "0006_furry_sinister_six",
+      "breakpoints": true
     }
   ]
 }

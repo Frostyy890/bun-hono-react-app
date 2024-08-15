@@ -1,0 +1,1 @@
+ALTER TABLE "Blacklist" ADD CONSTRAINT "Blacklist_userId_unique" UNIQUE("userId");
