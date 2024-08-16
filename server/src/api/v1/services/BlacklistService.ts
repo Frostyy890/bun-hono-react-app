@@ -56,19 +56,15 @@ async function updateBlacklistRecord(
   });
 }
 
-async function removeFromBlacklist(blRecordId: TBlacklistRecord["id"]): Promise<TBlacklistRecord> {
+async function removeFromBlacklist(userId: TBlacklistRecord["userId"]): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
     const [maybeDeletedRecord] = await tx
       .update(blacklistTable)
       .set({ deletedAt: new Date() })
-      .where(eq(blacklistTable.id, blRecordId))
+      .where(eq(blacklistTable.userId, userId))
       .returning();
     const deletedRecord = checkBlacklistRecordOutput(maybeDeletedRecord);
-    const maybeUser = await UserService.updateUser(
-      deletedRecord.userId,
-      { isBlacklisted: false },
-      tx
-    );
+    const maybeUser = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
     UserService.checkUserOutput(maybeUser);
     return deletedRecord;
   });
