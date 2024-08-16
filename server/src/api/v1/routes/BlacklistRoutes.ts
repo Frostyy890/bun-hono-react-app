@@ -24,7 +24,7 @@ const blacklistRoutes = new Hono()
     const updatedRecord = await BlacklistService.updateBlacklistRecord(blRecordId, data);
     return c.json({ updatedRecord });
   })
-  .delete("/:userId{[0-9]+}", async (c) => {
+  .delete("remove-user/:userId{[0-9]+}", async (c) => {
     const userId = Number.parseInt(c.req.param("userId"));
     const deletedRecord = await BlacklistService.removeFromBlacklist(userId);
     return c.json({ message: "User removed from blacklist", deletedRecord });
