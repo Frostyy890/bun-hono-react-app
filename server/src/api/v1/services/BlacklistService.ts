@@ -19,12 +19,11 @@ async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRec
     }
     const maybeUser = await UserService.updateUser(data.userId, { isBlacklisted: true }, tx);
     UserService.checkUserOutput(maybeUser);
+    const handleExpiry = () =>
+      data.expiresAt ? new Date(data.expiresAt) : handleBlacklistingPeriod(data.reason);
     const [blacklistRecord] = await tx
       .insert(blacklistTable)
-      .values({
-        ...data,
-        expiresAt: data.expiresAt || handleBlacklistingPeriod(data.reason),
-      })
+      .values({ ...data, expiresAt: handleExpiry() })
       .returning();
     return blacklistRecord;
   });
@@ -34,25 +33,25 @@ async function updateBlacklistRecord(
   blRecordId: TBlacklistRecord["id"],
   data: TUpdateBlacklistInput
 ): Promise<TBlacklistRecord> {
-  await getBlacklistRecordById(blRecordId);
+  const blacklistRecord = await getBlacklistRecordById(blRecordId);
   return await db.transaction(async (tx) => {
-    if (data.userId) {
-      const maybeUser = await UserService.getUserByAttribute("id", data.userId, tx);
-      UserService.checkUserOutput(maybeUser);
-      if (data.deletedAt !== undefined) {
-        const isBlacklisted = data.deletedAt === null;
-        await UserService.updateUser(data.userId, { isBlacklisted }, tx);
-      }
+    const userId = data.userId ?? blacklistRecord.userId;
+    const maybeUser = await UserService.getUserByAttribute("id", userId, tx);
+    UserService.checkUserOutput(maybeUser);
+    if (data.deletedAt !== undefined) {
+      const isBlacklisted = data.deletedAt === null;
+      await UserService.updateUser(userId, { isBlacklisted }, tx);
     }
-    if (data.reason && !data.expiresAt) {
-      data.expiresAt = handleBlacklistingPeriod(data.reason);
-    }
-    const [blacklistRecord] = await tx
+    const handleExpiry = () => {
+      if (data.expiresAt) return new Date(data.expiresAt);
+      return data.reason ? handleBlacklistingPeriod(data.reason) : undefined;
+    };
+    const [updatedBlacklistRecord] = await tx
       .update(blacklistTable)
-      .set(data)
+      .set({ ...data, expiresAt: handleExpiry() })
       .where(eq(blacklistTable.id, blRecordId))
       .returning();
-    return blacklistRecord;
+    return updatedBlacklistRecord;
   });
 }
 
@@ -92,6 +91,7 @@ async function getBlacklistRecordById(
 async function getAllBlacklistRecords(): Promise<TBlacklistRecord[]> {
   return await db.select().from(blacklistTable);
 }
+
 function isBlacklistRecordExpired(blacklistRecord: TBlacklistRecord): boolean {
   return blacklistRecord.expiresAt < new Date();
 }

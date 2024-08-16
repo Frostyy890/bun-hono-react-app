@@ -10,13 +10,7 @@ export const addToBlacklistSchema = createInsertSchema(blacklistTable)
     updatedAt: true,
   })
   .extend({
-    expiresAt: z
-      .date()
-      .min(
-        new Date(Date.now() * BlacklistExpiryPeriod.ONE_DAY),
-        "Expiry date must be at least one day from now"
-      )
-      .optional(),
+    expiresAt: z.string().date().optional(),
   });
 export const updateBlacklistSchema = addToBlacklistSchema.partial();
 export const selectFromBlacklistSchema = createSelectSchema(blacklistTable);
