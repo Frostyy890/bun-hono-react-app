@@ -10,7 +10,15 @@ export const addToBlacklistSchema = createInsertSchema(blacklistTable)
     updatedAt: true,
   })
   .extend({
-    expiresAt: z.string().date().optional(),
+    expiresAt: z.coerce
+      .date()
+      .min(
+        new Date(Date.now() * BlacklistExpiryPeriod.ONE_DAY),
+        "expiry date must be in the future"
+      )
+      .optional(),
+    deletedAt: z.coerce.date().nullable().optional(),
+    notes: z.string().min(5, "required to be at least 5 characters long").optional(),
   });
-export const updateBlacklistSchema = addToBlacklistSchema.partial();
+export const updateBlacklistSchema = addToBlacklistSchema.partial().omit({ userId: true });
 export const selectFromBlacklistSchema = createSelectSchema(blacklistTable);

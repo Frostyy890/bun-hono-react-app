@@ -1,6 +1,7 @@
 import { db } from "../../../db/connection";
+import BaseRepository from "../repositories/BaseRepository";
 import { blacklistTable, BlacklistReason, BlacklistExpiryPeriod } from "../../../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import type {
   TBlacklistRecord,
   TAddToBlacklistInput,
@@ -9,6 +10,8 @@ import type {
 import { HTTPException } from "hono/http-exception";
 import HTTPStatusCode from "../constants/HTTPStatusCode";
 import UserService from "./UserService";
+
+const blacklistRepo = new BaseRepository(blacklistTable);
 
 async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
@@ -19,14 +22,18 @@ async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRec
     }
     const maybeUser = await UserService.updateUser(data.userId, { isBlacklisted: true }, tx);
     UserService.checkUserOutput(maybeUser);
-    const handleExpiry = () =>
-      data.expiresAt ? new Date(data.expiresAt) : handleBlacklistingPeriod(data.reason);
-    const [blacklistRecord] = await tx
-      .insert(blacklistTable)
-      .values({ ...data, expiresAt: handleExpiry() })
-      .returning();
-    return blacklistRecord;
+    const expiresAt = data.expiresAt ?? handleBlacklistingPeriod(data.reason);
+    return await blacklistRepo.create({ data: { ...data, expiresAt } }, tx);
   });
+}
+
+async function getBlacklistRecordByAttribute<K extends keyof TBlacklistRecord>(
+  attribute: K,
+  value: TBlacklistRecord[K]
+) {
+  const baseQuery = db.select().from(blacklistTable);
+  if (value === null) return (await baseQuery.where(isNull(blacklistTable[attribute])))[0];
+  return (await baseQuery.where(eq(blacklistTable[attribute], value)))[0];
 }
 
 async function updateBlacklistRecord(
@@ -35,7 +42,7 @@ async function updateBlacklistRecord(
 ): Promise<TBlacklistRecord> {
   const blacklistRecord = await getBlacklistRecordById(blRecordId);
   return await db.transaction(async (tx) => {
-    const userId = data.userId ?? blacklistRecord.userId;
+    const userId = blacklistRecord.userId;
     const maybeUser = await UserService.getUserByAttribute("id", userId, tx);
     UserService.checkUserOutput(maybeUser);
     if (data.deletedAt !== undefined) {
@@ -43,7 +50,7 @@ async function updateBlacklistRecord(
       await UserService.updateUser(userId, { isBlacklisted }, tx);
     }
     const handleExpiry = () => {
-      if (data.expiresAt) return new Date(data.expiresAt);
+      if (data.expiresAt) return data.expiresAt;
       return data.reason ? handleBlacklistingPeriod(data.reason) : undefined;
     };
     const [updatedBlacklistRecord] = await tx
