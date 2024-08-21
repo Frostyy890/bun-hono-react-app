@@ -1,5 +1,5 @@
 import { type PgTableWithColumns, type TableConfig, type PgInsertValue } from "drizzle-orm/pg-core";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db, type TDbClient } from "../../../db/connection";
 
 export default class BaseRepository<T extends TableConfig> {
@@ -7,7 +7,8 @@ export default class BaseRepository<T extends TableConfig> {
   constructor(table: typeof this.table) {
     this.table = table;
   }
-  async findMany<
+
+  public async findMany<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect
   >(
@@ -25,11 +26,18 @@ export default class BaseRepository<T extends TableConfig> {
       return await query
         .select()
         .from(this.table)
-        .where(and(...attributes.map((attr, index) => eq(this.table[attr], values[index]))));
+        .where(
+          and(
+            ...attributes.map((attr, index) => {
+              if (values[index] === null) return isNull(this.table[attr]);
+              return eq(this.table[attr], values[index]);
+            })
+          )
+        );
     }
     return await query.select().from(this.table);
   }
-  async findOne<
+  public async findOne<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect
   >(
@@ -42,7 +50,7 @@ export default class BaseRepository<T extends TableConfig> {
   ) {
     return (await this.findMany(args, tx))[0];
   }
-  async create<TTable extends typeof this.table>(
+  public async create<TTable extends typeof this.table>(
     args: {
       data: TTable["$inferInsert"] & PgInsertValue<TTable>;
     },
@@ -52,7 +60,7 @@ export default class BaseRepository<T extends TableConfig> {
     const [record] = await query.insert(this.table).values(args.data).returning();
     return record;
   }
-  async update<
+  public async update<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect,
     TTable extends typeof this.table
@@ -71,11 +79,18 @@ export default class BaseRepository<T extends TableConfig> {
     const [record] = await query
       .update(this.table)
       .set(args.data)
-      .where(and(...attributes.map((attr, index) => eq(this.table[attr], values[index]))))
+      .where(
+        and(
+          ...attributes.map((attr, index) => {
+            if (values[index] === null) return isNull(this.table[attr]);
+            return eq(this.table[attr], values[index]);
+          })
+        )
+      )
       .returning();
     return record;
   }
-  async delete<
+  public async delete<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect
   >(
@@ -91,7 +106,14 @@ export default class BaseRepository<T extends TableConfig> {
     const values = Object.values(args.where) as TSchema[TSchemaKey][];
     const [deletedRecord] = await query
       .delete(this.table)
-      .where(and(...attributes.map((attr, index) => eq(this.table[attr], values[index]))))
+      .where(
+        and(
+          ...attributes.map((attr, index) => {
+            if (values[index] === null) return isNull(this.table[attr]);
+            return eq(this.table[attr], values[index]);
+          })
+        )
+      )
       .returning();
     return deletedRecord;
   }
