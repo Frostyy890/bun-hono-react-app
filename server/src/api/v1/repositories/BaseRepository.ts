@@ -37,6 +37,7 @@ export default class BaseRepository<T extends TableConfig> {
     }
     return await query.select().from(this.table);
   }
+
   public async findOne<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect
@@ -50,6 +51,7 @@ export default class BaseRepository<T extends TableConfig> {
   ) {
     return (await this.findMany(args, tx))[0];
   }
+
   public async create<TTable extends typeof this.table>(
     args: {
       data: TTable["$inferInsert"] & PgInsertValue<TTable>;
@@ -57,9 +59,10 @@ export default class BaseRepository<T extends TableConfig> {
     tx?: TDbClient
   ) {
     const query = tx ?? db;
-    const [record] = await query.insert(this.table).values(args.data).returning();
-    return record;
+    const [createdRecord] = await query.insert(this.table).values(args.data).returning();
+    return createdRecord;
   }
+
   public async update<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect,
@@ -76,7 +79,7 @@ export default class BaseRepository<T extends TableConfig> {
     const query = tx ?? db;
     const attributes = Object.keys(args.where) as TSchemaKey[];
     const values = Object.values(args.where) as TSchema[TSchemaKey][];
-    const [record] = await query
+    const [updatedRecord] = await query
       .update(this.table)
       .set(args.data)
       .where(
@@ -88,8 +91,9 @@ export default class BaseRepository<T extends TableConfig> {
         )
       )
       .returning();
-    return record;
+    return updatedRecord;
   }
+
   public async delete<
     TSchema extends typeof this.table.$inferSelect,
     TSchemaKey extends keyof typeof this.table.$inferSelect

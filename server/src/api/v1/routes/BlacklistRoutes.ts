@@ -10,7 +10,10 @@ const blacklistRoutes = new Hono()
   })
   .get("/:blRecordId{[0-9]+}", async (c) => {
     const blRecordId = Number.parseInt(c.req.param("blRecordId"));
-    const blacklistRecord = await BlacklistService.getBlacklistRecordById(blRecordId);
+    const maybeBlacklistRecord = await BlacklistService.getOneBlacklistRecord({
+      id: blRecordId,
+    });
+    const blacklistRecord = BlacklistService.checkBlacklistRecordOutput(maybeBlacklistRecord);
     return c.json({ blacklistRecord });
   })
   .post("/", validateRequest(addToBlacklistSchema), async (c) => {

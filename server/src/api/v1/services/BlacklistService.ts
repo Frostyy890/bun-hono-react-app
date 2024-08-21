@@ -1,7 +1,6 @@
-import { db } from "../../../db/connection";
+import { db, type TDbClient } from "../../../db/connection";
 import BaseRepository from "../repositories/BaseRepository";
 import { blacklistTable, BlacklistReason, BlacklistExpiryPeriod } from "../../../db/schema";
-import { eq, isNull } from "drizzle-orm";
 import type {
   TBlacklistRecord,
   TAddToBlacklistInput,
@@ -27,21 +26,21 @@ async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRec
   });
 }
 
-async function getBlacklistRecordByAttribute<K extends keyof TBlacklistRecord>(
-  attribute: K,
-  value: TBlacklistRecord[K]
+async function getOneBlacklistRecord<K extends keyof TBlacklistRecord>(
+  where: {
+    [key in K]: TBlacklistRecord[K];
+  },
+  tx?: TDbClient
 ) {
-  const baseQuery = db.select().from(blacklistTable);
-  if (value === null) return (await baseQuery.where(isNull(blacklistTable[attribute])))[0];
-  return (await baseQuery.where(eq(blacklistTable[attribute], value)))[0];
+  return await blacklistRepo.findOne({ where }, tx);
 }
 
 async function updateBlacklistRecord(
   blRecordId: TBlacklistRecord["id"],
   data: TUpdateBlacklistInput
 ): Promise<TBlacklistRecord> {
-  const blacklistRecord = await getBlacklistRecordById(blRecordId);
   return await db.transaction(async (tx) => {
+    const blacklistRecord = await getOneBlacklistRecord({ id: blRecordId }, tx);
     const userId = blacklistRecord.userId;
     const maybeUser = await UserService.getUserByAttribute("id", userId, tx);
     UserService.checkUserOutput(maybeUser);
@@ -53,54 +52,43 @@ async function updateBlacklistRecord(
       if (data.expiresAt) return data.expiresAt;
       return data.reason ? handleBlacklistingPeriod(data.reason) : undefined;
     };
-    const [updatedBlacklistRecord] = await tx
-      .update(blacklistTable)
-      .set({ ...data, expiresAt: handleExpiry() })
-      .where(eq(blacklistTable.id, blRecordId))
-      .returning();
+    const updatedBlacklistRecord = await blacklistRepo.update(
+      {
+        where: { id: blRecordId },
+        data: { ...data, expiresAt: handleExpiry() },
+      },
+      tx
+    );
     return updatedBlacklistRecord;
   });
 }
 
 async function removeFromBlacklist(userId: TBlacklistRecord["userId"]): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
-    const [maybeBlacklistRecord] = await tx
-      .select()
-      .from(blacklistTable)
-      .where(eq(blacklistTable.userId, userId));
+    const maybeBlacklistRecord = await blacklistRepo.findOne({ where: { userId } }, tx);
     const blacklistRecord = checkBlacklistRecordOutput(maybeBlacklistRecord);
     if (blacklistRecord.deletedAt !== null) {
       throw new HTTPException(HTTPStatusCode.BAD_REQUEST, {
         message: "User is not blacklisted",
       });
     }
-    const [softDeletedRecord] = await tx
-      .update(blacklistTable)
-      .set({ deletedAt: new Date() })
-      .where(eq(blacklistTable.userId, userId))
-      .returning();
+    const softDeletedRecord = await blacklistRepo.update(
+      {
+        where: {
+          id: blacklistRecord.id,
+        },
+        data: { deletedAt: new Date() },
+      },
+      tx
+    );
     const maybeUser = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
     UserService.checkUserOutput(maybeUser);
     return softDeletedRecord;
   });
 }
 
-async function getBlacklistRecordById(
-  blRecordId: TBlacklistRecord["id"]
-): Promise<TBlacklistRecord> {
-  const [blacklistRecord] = await db
-    .select()
-    .from(blacklistTable)
-    .where(eq(blacklistTable.id, blRecordId));
-  return checkBlacklistRecordOutput(blacklistRecord);
-}
-
 async function getAllBlacklistRecords(): Promise<TBlacklistRecord[]> {
-  return await db.select().from(blacklistTable);
-}
-
-function isBlacklistRecordExpired(blacklistRecord: TBlacklistRecord): boolean {
-  return blacklistRecord.expiresAt < new Date();
+  return await blacklistRepo.findMany({});
 }
 
 function handleBlacklistingPeriod(reason: TAddToBlacklistInput["reason"]): Date {
@@ -135,10 +123,10 @@ function checkBlacklistRecordOutput(
 }
 
 export default {
+  getAllBlacklistRecords,
+  getOneBlacklistRecord,
   addToBlacklist,
   removeFromBlacklist,
-  getBlacklistRecordById,
-  getAllBlacklistRecords,
   updateBlacklistRecord,
-  isBlacklistRecordExpired,
+  checkBlacklistRecordOutput,
 };
