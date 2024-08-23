@@ -5,9 +5,8 @@ import errorHandler from "./api/v1/middlewares/ErrorHandler";
 import authRoutes from "./api/v1/routes/AuthRoutes";
 import userRoutes from "./api/v1/routes/UserRoutes";
 import blacklistRoutes from "./api/v1/routes/BlacklistRoutes";
-import AuthMiddleware from "./api/v1/middlewares/AuthMiddleware";
 import type { TAuthEnv } from "./api/v1/types/TAuth";
-import { UserRole } from "./db/schema";
+import { jwt } from "hono/jwt";
 import { serveStatic } from "hono/bun";
 
 const app = new Hono<TAuthEnv>();
@@ -15,8 +14,9 @@ const app = new Hono<TAuthEnv>();
 app.use(logger());
 app.use(
   "api/v1/users/*",
-  AuthMiddleware.authenticateToken,
-  AuthMiddleware.authorizeRole([UserRole.ADMIN])
+  jwt({
+    secret: settings.jwt.accessToken.secret,
+  })
 );
 app.onError((err, c) => {
   const { message, status } = errorHandler(err);
