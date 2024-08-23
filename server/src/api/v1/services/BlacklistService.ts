@@ -41,12 +41,14 @@ async function updateBlacklistRecord(
 ): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
     const blacklistRecord = await getOneBlacklistRecord({ id: blRecordId }, tx);
-    const userId = blacklistRecord.userId;
-    const maybeUser = await UserService.getUserByAttribute("id", userId, tx);
-    UserService.checkUserOutput(maybeUser);
     if (data.deletedAt !== undefined) {
       const isBlacklisted = data.deletedAt === null;
-      await UserService.updateUser(userId, { isBlacklisted }, tx);
+      const maybeUpdatedUser = await UserService.updateUser(
+        blacklistRecord.userId,
+        { isBlacklisted },
+        tx
+      );
+      UserService.checkUserOutput(maybeUpdatedUser);
     }
     const handleExpiry = () => {
       if (data.expiresAt) return data.expiresAt;
