@@ -1,4 +1,6 @@
-export interface ISettings {
+import type { Env } from "bun";
+
+interface ISettings {
   port: number;
   db: {
     url: string;
@@ -16,29 +18,31 @@ export interface ISettings {
   };
 }
 
-export function getEnvVariable(name: string, defaultValue?: string) {
-  const value = process.env[name];
+function getEnv(key: keyof Env, fallback?: string) {
+  const value = process.env[key];
   if (!value) {
-    if (defaultValue) return defaultValue;
-    throw new Error(`Missing environment variable: ${name}`);
+    if (fallback) return fallback;
+    throw new Error("Missing environment variable: " + key);
   }
   return value;
 }
 
-export default {
-  port: Number.parseInt(getEnvVariable("PORT", "3000")),
+const settings: ISettings = {
+  port: Number.parseInt(getEnv("PORT", "3000")),
   db: {
-    url: getEnvVariable("DATABASE_URL"),
+    url: getEnv("DATABASE_URL"),
   },
   hash: {
-    saltRounds: Number.parseInt(getEnvVariable("SALT_ROUNDS", "10")),
+    saltRounds: Number.parseInt(getEnv("SALT_ROUNDS", "10")),
   },
   jwt: {
     accessToken: {
-      secret: getEnvVariable("ACCESS_TOKEN_SECRET", "access-token-secret"),
+      secret: getEnv("ACCESS_TOKEN_SECRET", "access-token-secret"),
     },
     refreshToken: {
-      secret: getEnvVariable("REFRESH_TOKEN_SECRET", "refresh-token-secret"),
+      secret: getEnv("REFRESH_TOKEN_SECRET", "refresh-token-secret"),
     },
   },
-} satisfies ISettings;
+};
+
+export default settings;
