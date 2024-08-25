@@ -22,6 +22,6 @@ export type TAuthTokens = {
 
 export type TAuthEnv = {
   Variables: {
-    user: TUser | undefined;
+    jwtPayload: TAuthTokenPayload;
   };
 };
