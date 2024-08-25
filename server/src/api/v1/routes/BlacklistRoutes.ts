@@ -16,9 +16,10 @@ const blacklistRoutes = new Hono()
     const blacklistRecord = BlacklistService.checkBlacklistRecordOutput(maybeBlacklistRecord);
     return c.json({ blacklistRecord });
   })
-  .post("/", validateRequest(addToBlacklistSchema), async (c) => {
+  .post("/add-user/:userId{[0-9]+}", validateRequest(addToBlacklistSchema), async (c) => {
+    const userId = Number.parseInt(c.req.param("userId"));
     const data = c.req.valid("json");
-    const blacklistRecord = await BlacklistService.addToBlacklist(data);
+    const blacklistRecord = await BlacklistService.addToBlacklist(userId, data);
     return c.json({ blacklistRecord });
   })
   .patch("/:blRecordId{[0-9]+}", validateRequest(updateBlacklistSchema), async (c) => {

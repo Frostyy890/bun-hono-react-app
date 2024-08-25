@@ -6,23 +6,27 @@ import type {
   TAddToBlacklistInput,
   TUpdateBlacklistInput,
 } from "../types/TBlacklist";
+import type { TUser } from "../types/TUser";
 import { HTTPException } from "hono/http-exception";
 import HTTPStatusCode from "../constants/HTTPStatusCode";
 import UserService from "./UserService";
 
 const blacklistRepo = new BaseRepository(blacklistTable);
 
-async function addToBlacklist(data: TAddToBlacklistInput): Promise<TBlacklistRecord> {
+async function addToBlacklist(
+  userId: TUser["id"],
+  data: TAddToBlacklistInput
+): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
     if (data.notes && !data.reason) {
       throw new HTTPException(HTTPStatusCode.BAD_REQUEST, {
         message: "Reason is required when notes are provided",
       });
     }
-    const maybeUser = await UserService.updateUser(data.userId, { isBlacklisted: true }, tx);
+    const maybeUser = await UserService.updateUser(userId, { isBlacklisted: true }, tx);
     UserService.checkUserOutput(maybeUser);
-    const expiresAt = data.expiresAt ?? handleBlacklistingPeriod(data.reason);
-    return await blacklistRepo.create({ data: { ...data, expiresAt } }, tx);
+    const expiresAt = data.expiresAt || handleBlacklistingPeriod(data.reason);
+    return await blacklistRepo.create({ data: { ...data, userId, expiresAt } }, tx);
   });
 }
 
