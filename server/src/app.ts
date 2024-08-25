@@ -18,6 +18,8 @@ app.use(
     secret: settings.jwt.accessToken.secret,
   })
 );
+app.use("api/v1/blacklist/*", jwt({ secret: settings.jwt.accessToken.secret }));
+
 app.onError((err, c) => {
   const { message, status } = errorHandler(err);
   return c.json({ message }, status);
