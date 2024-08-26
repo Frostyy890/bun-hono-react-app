@@ -13,6 +13,19 @@ import UserService from "./UserService";
 
 const blacklistRepo = new BaseRepository(blacklistTable);
 
+async function getAllBlacklistRecords(): Promise<TBlacklistRecord[]> {
+  return await blacklistRepo.findMany({});
+}
+
+async function getOneBlacklistRecord<K extends keyof TBlacklistRecord>(
+  where: {
+    [key in K]: TBlacklistRecord[K];
+  },
+  tx?: TDbClient
+) {
+  return await blacklistRepo.findOne({ where }, tx);
+}
+
 async function addToBlacklist(
   userId: TUser["id"],
   data: TAddToBlacklistInput
@@ -28,15 +41,6 @@ async function addToBlacklist(
     const expiresAt = data.expiresAt || handleBlacklistingPeriod(data.reason);
     return await blacklistRepo.create({ data: { ...data, userId, expiresAt } }, tx);
   });
-}
-
-async function getOneBlacklistRecord<K extends keyof TBlacklistRecord>(
-  where: {
-    [key in K]: TBlacklistRecord[K];
-  },
-  tx?: TDbClient
-) {
-  return await blacklistRepo.findOne({ where }, tx);
 }
 
 async function updateBlacklistRecord(
@@ -91,10 +95,6 @@ async function removeFromBlacklist(userId: TBlacklistRecord["userId"]): Promise<
     UserService.checkUserOutput(maybeUser);
     return softDeletedRecord;
   });
-}
-
-async function getAllBlacklistRecords(): Promise<TBlacklistRecord[]> {
-  return await blacklistRepo.findMany({});
 }
 
 function handleBlacklistingPeriod(reason: TAddToBlacklistInput["reason"]): Date {
