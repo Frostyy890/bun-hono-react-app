@@ -16,13 +16,13 @@ const userRoutes = new Hono<TAuthEnv>()
   })
   .get("/:id{[0-9]+}", AuthMiddleware.authorizeRole([UserRole.ADMIN]), async (c) => {
     const id = Number.parseInt(c.req.param("id"));
-    const maybeUser = await UserService.getUserByAttribute("id", id);
+    const maybeUser = await UserService.getOneUser({ id });
     const user = UserService.checkUserOutput(maybeUser);
     return c.json({ user: new UserDto(user) }, HTTPStatusCode.OK);
   })
   .get("/me", async (c) => {
     const payload = c.get("jwtPayload");
-    const maybeUser = await UserService.getUserByAttribute("id", payload.sub.userId);
+    const maybeUser = await UserService.getOneUser({ id: payload.sub.userId });
     const user = UserService.checkUserOutput(maybeUser);
     return c.json({ user: new UserDto(user) }, HTTPStatusCode.OK);
   })

@@ -16,7 +16,7 @@ async function register(data: TRegisterInput) {
 }
 
 async function login(data: TLoginInput) {
-  const user = await UserService.getUserByAttribute("username", data.username);
+  const user = await UserService.getOneUser({ username: data.username, isBlacklisted: false });
   if (!user || !(await bcrypt.compare(data.password, user.password))) {
     throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Invalid credentials" });
   }
@@ -31,7 +31,7 @@ async function refresh(refreshToken: string | undefined) {
   if (!refreshToken)
     throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
   const sub = (await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret)).sub;
-  const user = await UserService.getUserByAttribute("id", sub.userId);
+  const user = await UserService.getOneUser({ id: sub.userId, isBlacklisted: false });
   if (!user || user.refreshTokenVersion !== sub.refreshTokenVersion) {
     throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
   }
@@ -45,7 +45,7 @@ async function refresh(refreshToken: string | undefined) {
 async function logout(refreshToken: string, isLogoutFromAll: boolean = false) {
   if (isLogoutFromAll) {
     const sub = TokenService.decodeToken(refreshToken).sub;
-    const user = await UserService.getUserByAttribute("id", sub.userId);
+    const user = await UserService.getOneUser({ id: sub.userId, isBlacklisted: false });
     if (user) {
       await UserService.updateUser(user.id, { refreshTokenVersion: user.refreshTokenVersion + 1 });
     }
