@@ -30,9 +30,9 @@ async function login(data: TLoginInput) {
 async function refresh(refreshToken: string | undefined) {
   if (!refreshToken)
     throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
-  const sub = (await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret)).sub;
-  const user = await UserService.getOneUser({ id: sub.userId, isBlacklisted: false });
-  if (!user || user.refreshTokenVersion !== sub.refreshTokenVersion) {
+  const decoded = await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret);
+  const user = await UserService.getOneUser({ id: decoded.sub.userId, isBlacklisted: false });
+  if (!user || user.refreshTokenVersion !== decoded.sub.refreshTokenVersion) {
     throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
   }
   const tokens = await TokenService.generateAuthTokens({
@@ -44,8 +44,8 @@ async function refresh(refreshToken: string | undefined) {
 
 async function logout(refreshToken: string, isLogoutFromAll: boolean = false) {
   if (isLogoutFromAll) {
-    const sub = TokenService.decodeToken(refreshToken).sub;
-    const user = await UserService.getOneUser({ id: sub.userId, isBlacklisted: false });
+    const decoded = TokenService.decodeToken(refreshToken);
+    const user = await UserService.getOneUser({ id: decoded.sub.userId, isBlacklisted: false });
     if (user) {
       await UserService.updateUser(user.id, { refreshTokenVersion: user.refreshTokenVersion + 1 });
     }
