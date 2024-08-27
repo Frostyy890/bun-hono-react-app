@@ -13,10 +13,10 @@ const blacklistRoutes = new Hono<TAuthEnv>()
   })
   .get("/:blRecordId{[0-9]+}", AuthMiddleware.authorizeRole([UserRole.ADMIN]), async (c) => {
     const blRecordId = Number.parseInt(c.req.param("blRecordId"));
-    const maybeBlacklistRecord = await BlacklistService.getOneBlacklistRecord({
+    const blacklistRecord = await BlacklistService.getOneBlacklistRecord({
       id: blRecordId,
     });
-    const blacklistRecord = BlacklistService.checkBlacklistRecordOutput(maybeBlacklistRecord);
+    if (!blacklistRecord) return BlacklistService.throwBlRecordNotFound();
     return c.json({ blacklistRecord });
   })
   .post(

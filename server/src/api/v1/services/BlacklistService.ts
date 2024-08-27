@@ -22,7 +22,7 @@ async function getOneBlacklistRecord<K extends keyof TBlacklistRecord>(
     [key in K]: TBlacklistRecord[K];
   },
   tx?: TDbClient
-) {
+): Promise<TBlacklistRecord | undefined> {
   return await blacklistRepo.findOne({ where }, tx);
 }
 
@@ -48,51 +48,50 @@ async function updateBlacklistRecord(
   data: TUpdateBlacklistInput
 ): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
-    const blacklistRecord = await getOneBlacklistRecord({ id: blRecordId }, tx);
-    if (data.deletedAt !== undefined) {
-      const isBlacklisted = data.deletedAt === null;
-      const updatedUser = await UserService.updateUser(
-        blacklistRecord.userId,
-        { isBlacklisted },
-        tx
-      );
-      if (!updatedUser) throw UserService.throwUserNotFound();
-    }
     const handleExpiry = () => {
       if (data.expiresAt) return data.expiresAt;
       return data.reason ? handleBlacklistingPeriod(data.reason) : undefined;
     };
-    const updatedBlacklistRecord = await blacklistRepo.update(
+    const updatedBlacklistRecord: TBlacklistRecord | undefined = await blacklistRepo.update(
       {
         where: { id: blRecordId },
         data: { ...data, expiresAt: handleExpiry() },
       },
       tx
     );
+    if (!updatedBlacklistRecord) return throwBlRecordNotFound();
+    if (data.deletedAt !== undefined) {
+      const isBlacklisted = data.deletedAt === null;
+      const updatedUser = await UserService.updateUser(
+        updatedBlacklistRecord.userId,
+        { isBlacklisted },
+        tx
+      );
+      if (!updatedUser) throw UserService.throwUserNotFound();
+    }
     return updatedBlacklistRecord;
   });
 }
 
 async function removeFromBlacklist(userId: TBlacklistRecord["userId"]): Promise<TBlacklistRecord> {
   return await db.transaction(async (tx) => {
-    const maybeBlacklistRecord = await blacklistRepo.findOne({ where: { userId } }, tx);
-    const blacklistRecord = checkBlacklistRecordOutput(maybeBlacklistRecord);
-    if (blacklistRecord.deletedAt !== null) {
-      throw new HTTPException(HTTPStatusCode.BAD_REQUEST, {
-        message: "User is not blacklisted",
-      });
-    }
     const softDeletedRecord = await blacklistRepo.update(
       {
         where: {
-          id: blacklistRecord.id,
+          userId,
         },
         data: { deletedAt: new Date() },
       },
       tx
     );
-    const user = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
-    if (!user) throw UserService.throwUserNotFound();
+    if (!softDeletedRecord) return throwBlRecordNotFound();
+    if (softDeletedRecord.deletedAt !== null) {
+      throw new HTTPException(HTTPStatusCode.BAD_REQUEST, {
+        message: "User is not blacklisted",
+      });
+    }
+    const updatedUser = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
+    if (!updatedUser) throw UserService.throwUserNotFound();
     return softDeletedRecord;
   });
 }
@@ -118,14 +117,10 @@ function handleBlacklistingPeriod(reason: TAddToBlacklistInput["reason"]): Date 
   }
 }
 
-function checkBlacklistRecordOutput(
-  blacklistRecord: TBlacklistRecord | undefined
-): TBlacklistRecord {
-  if (!blacklistRecord)
-    throw new HTTPException(HTTPStatusCode.NOT_FOUND, {
-      message: "Blacklist record not found",
-    });
-  return blacklistRecord;
+function throwBlRecordNotFound(): never {
+  throw new HTTPException(HTTPStatusCode.NOT_FOUND, {
+    message: "Blacklist record not found",
+  });
 }
 
 export default {
@@ -134,5 +129,5 @@ export default {
   addToBlacklist,
   removeFromBlacklist,
   updateBlacklistRecord,
-  checkBlacklistRecordOutput,
+  throwBlRecordNotFound,
 };
