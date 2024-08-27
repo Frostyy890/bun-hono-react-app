@@ -18,7 +18,7 @@ async function getOneUser<K extends keyof TUser>(
     [key in K]: TUser[K];
   },
   tx?: TDbClient
-) {
+): Promise<TUser | undefined> {
   return await userRepo.findOne({ where }, tx);
 }
 
@@ -40,9 +40,8 @@ async function deleteUser(userId: TUser["id"]): Promise<TUser | undefined> {
   return await userRepo.delete({ where: { id: userId } });
 }
 
-function checkUserOutput(user: TUser | undefined) {
-  if (!user) throw new HTTPException(HTTPStatusCode.NOT_FOUND, { message: "User not found" });
-  return user;
+function throwUserNotFound(): never {
+  throw new HTTPException(HTTPStatusCode.NOT_FOUND, { message: "User not found" });
 }
 
 export default {
@@ -51,5 +50,5 @@ export default {
   createUser,
   updateUser,
   deleteUser,
-  checkUserOutput,
+  throwUserNotFound,
 };

@@ -16,14 +16,14 @@ const userRoutes = new Hono<TAuthEnv>()
   })
   .get("/:id{[0-9]+}", AuthMiddleware.authorizeRole([UserRole.ADMIN]), async (c) => {
     const id = Number.parseInt(c.req.param("id"));
-    const maybeUser = await UserService.getOneUser({ id });
-    const user = UserService.checkUserOutput(maybeUser);
+    const user = await UserService.getOneUser({ id });
+    if (!user) throw UserService.throwUserNotFound();
     return c.json({ user: new UserDto(user) }, HTTPStatusCode.OK);
   })
   .get("/me", async (c) => {
     const payload = c.get("jwtPayload");
-    const maybeUser = await UserService.getOneUser({ id: payload.sub.userId });
-    const user = UserService.checkUserOutput(maybeUser);
+    const user = await UserService.getOneUser({ id: payload.sub.userId });
+    if (!user) throw UserService.throwUserNotFound();
     return c.json({ user: new UserDto(user) }, HTTPStatusCode.OK);
   })
   .post(
@@ -43,15 +43,15 @@ const userRoutes = new Hono<TAuthEnv>()
     async (c) => {
       const id = Number.parseInt(c.req.param("id"));
       const data = c.req.valid("json");
-      const maybeUpdatedUser = await UserService.updateUser(id, data);
-      const updatedUser = UserService.checkUserOutput(maybeUpdatedUser);
+      const updatedUser = await UserService.updateUser(id, data);
+      if (!updatedUser) throw UserService.throwUserNotFound();
       return c.json({ user: new UserDto(updatedUser) }, HTTPStatusCode.OK);
     }
   )
   .delete("/:id{[0-9]+}", AuthMiddleware.authorizeRole([UserRole.ADMIN]), async (c) => {
     const id = Number.parseInt(c.req.param("id"));
-    const maybeDeletedUser = await UserService.deleteUser(id);
-    UserService.checkUserOutput(maybeDeletedUser);
+    const deletedUser = await UserService.deleteUser(id);
+    if (!deletedUser) throw UserService.throwUserNotFound();
     return c.json({ message: "User deleted" }, HTTPStatusCode.OK);
   });
 

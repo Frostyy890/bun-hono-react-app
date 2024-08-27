@@ -36,8 +36,8 @@ async function addToBlacklist(
         message: "Reason is required when notes are provided",
       });
     }
-    const maybeUser = await UserService.updateUser(userId, { isBlacklisted: true }, tx);
-    UserService.checkUserOutput(maybeUser);
+    const user = await UserService.updateUser(userId, { isBlacklisted: true }, tx);
+    if (!user) throw UserService.throwUserNotFound();
     const expiresAt = data.expiresAt || handleBlacklistingPeriod(data.reason);
     return await blacklistRepo.create({ data: { ...data, userId, expiresAt } }, tx);
   });
@@ -51,12 +51,12 @@ async function updateBlacklistRecord(
     const blacklistRecord = await getOneBlacklistRecord({ id: blRecordId }, tx);
     if (data.deletedAt !== undefined) {
       const isBlacklisted = data.deletedAt === null;
-      const maybeUpdatedUser = await UserService.updateUser(
+      const updatedUser = await UserService.updateUser(
         blacklistRecord.userId,
         { isBlacklisted },
         tx
       );
-      UserService.checkUserOutput(maybeUpdatedUser);
+      if (!updatedUser) throw UserService.throwUserNotFound();
     }
     const handleExpiry = () => {
       if (data.expiresAt) return data.expiresAt;
@@ -91,8 +91,8 @@ async function removeFromBlacklist(userId: TBlacklistRecord["userId"]): Promise<
       },
       tx
     );
-    const maybeUser = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
-    UserService.checkUserOutput(maybeUser);
+    const user = await UserService.updateUser(userId, { isBlacklisted: false }, tx);
+    if (!user) throw UserService.throwUserNotFound();
     return softDeletedRecord;
   });
 }
