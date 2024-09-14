@@ -28,8 +28,9 @@ async function login(data: TLoginInput) {
 }
 
 async function refresh(refreshToken: string | undefined) {
-  if (!refreshToken)
+  if (!refreshToken) {
     throw new HTTPException(HTTPStatusCode.UNAUTHORIZED, { message: "Unauthorized" });
+  }
   const decoded = await TokenService.verifyToken(refreshToken, settings.jwt.refreshToken.secret);
   const user = await UserService.getOneUser({ id: decoded.sub.userId, isBlacklisted: false });
   if (!user || user.refreshTokenVersion !== decoded.sub.refreshTokenVersion) {
@@ -43,15 +44,11 @@ async function refresh(refreshToken: string | undefined) {
 }
 
 async function logout(refreshToken: string, isLogoutFromAll: boolean = false) {
-  if (isLogoutFromAll) {
-    const decoded = TokenService.decodeToken(refreshToken);
-    const user = await UserService.getOneUser({ id: decoded.sub.userId, isBlacklisted: false });
-    if (user) {
-      await UserService.updateUser(user.id, { refreshTokenVersion: user.refreshTokenVersion + 1 });
-    }
-    return;
-  }
-  return;
+  if (!isLogoutFromAll) return;
+  const decoded = TokenService.decodeToken(refreshToken);
+  const user = await UserService.getOneUser({ id: decoded.sub.userId, isBlacklisted: false });
+  if (!user) return;
+  await UserService.updateUser(user.id, { refreshTokenVersion: user.refreshTokenVersion + 1 });
 }
 
 export default { register, login, refresh, logout };
