@@ -2,6 +2,7 @@ import type { TUser, TCreateUserInput, TUpdateUserInput } from "../types/TUser";
 import type { TDbClient } from "../../../db/connection";
 import { usersTable } from "../../../db/schema";
 import BaseRepository from "../repositories/BaseRepository";
+import RedisService from "./RedisService";
 import { HTTPException } from "hono/http-exception";
 import HTTPStatusCode from "../constants/HTTPStatusCode";
 import bcrypt from "bcrypt";
@@ -10,7 +11,11 @@ import settings from "../../../config/settings";
 const userRepo = new BaseRepository(usersTable);
 
 async function getAllUsers(): Promise<TUser[]> {
-  return await userRepo.findMany({});
+  const cachedUsers = await RedisService.get<TUser[]>("users");
+  if (cachedUsers) return cachedUsers;
+  const users = await userRepo.findMany({});
+  await RedisService.set("users", users);
+  return users;
 }
 
 async function getOneUser<K extends keyof TUser>(
@@ -19,12 +24,22 @@ async function getOneUser<K extends keyof TUser>(
   },
   tx?: TDbClient
 ): Promise<TUser | undefined> {
-  return await userRepo.findOne({ where }, tx);
+  const storageKey = `user:${Object.keys(where)
+    .map((key) => `${key}:${where[key as K]}`)
+    .join(":")}`;
+  await RedisService.remove(storageKey);
+  const cachedUser = await RedisService.get<TUser>(storageKey);
+  if (cachedUser) return cachedUser;
+  const user = await userRepo.findOne({ where }, tx);
+  if (user) await RedisService.set(storageKey, user);
+  return user;
 }
 
 async function createUser(data: TCreateUserInput, tx?: TDbClient): Promise<TUser> {
   data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  return await userRepo.create({ data }, tx);
+  const newUser = await userRepo.create({ data }, tx);
+  if (newUser) await RedisService.remove("users");
+  return newUser;
 }
 
 async function updateUser(
@@ -33,11 +48,15 @@ async function updateUser(
   tx?: TDbClient
 ): Promise<TUser | undefined> {
   if (data.password) data.password = await bcrypt.hash(data.password, settings.hash.saltRounds);
-  return await userRepo.update({ where: { id: userId }, data }, tx);
+  const updatedUser = await userRepo.update({ where: { id: userId }, data }, tx);
+  if (updatedUser) await RedisService.remove("users");
+  return updatedUser;
 }
 
 async function deleteUser(userId: TUser["id"]): Promise<TUser | undefined> {
-  return await userRepo.delete({ where: { id: userId } });
+  const deletedUser = await userRepo.delete({ where: { id: userId } });
+  if (deletedUser) await RedisService.remove("users");
+  return deletedUser;
 }
 
 function throwUserNotFound(): never {

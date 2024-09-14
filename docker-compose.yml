@@ -2,6 +2,7 @@ version: "3.8"
 
 volumes:
   pgdata: {}
+  redisdata: {}
 
 services:
   db:
@@ -14,3 +15,14 @@ services:
       - .env
     ports:
       - "5433:5432"
+  redis:
+    image: bitnami/redis:7.2.5
+    container_name: bun-hono-api-redis
+    command: /opt/bitnami/scripts/redis/run.sh --appendonly no --requirepass ${REDIS_PASSWORD}
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redisdata:/bitnami/redis/data
+    env_file:
+      - .env

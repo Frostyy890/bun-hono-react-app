@@ -26,9 +26,7 @@ const settings = {
     },
   },
   redis: {
-    host: getEnv("REDIS_HOST", "localhost"),
-    port: Number.parseInt(getEnv("REDIS_PORT", "6380")),
-    password: getEnv("REDIS_PASSWORD", "password123"),
+    url: getEnv("REDIS_URL"),
   },
 };
 
