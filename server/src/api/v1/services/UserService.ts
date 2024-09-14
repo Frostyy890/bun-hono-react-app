@@ -27,7 +27,6 @@ async function getOneUser<K extends keyof TUser>(
   const storageKey = `user:${Object.keys(where)
     .map((key) => `${key}:${where[key as K]}`)
     .join(":")}`;
-  await RedisService.remove(storageKey);
   const cachedUser = await RedisService.get<TUser>(storageKey);
   if (cachedUser) return cachedUser;
   const user = await userRepo.findOne({ where }, tx);
