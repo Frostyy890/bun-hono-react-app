@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-const healthRoutes = new Hono().get("/", async (c) => {
+const healthRoutes = new Hono().all("/", async (c) => {
   return c.json({ message: "Server is running" });
 });
 
