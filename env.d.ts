@@ -1,16 +1,23 @@
+import { z } from "zod";
+
+const envSchema = z.object({
+  PORT: z.string(),
+  POSTGRES_USER: z.string(),
+  POSTGRES_PASSWORD: z.string(),
+  POSTGRES_DB: z.string(),
+  POSTGRES_HOST: z.string(),
+  POSTGRES_PORT: z.string(),
+  POSTGRES_HOST_AUTH_METHOD: z.string(),
+  POSTGRES_INITDB_ARGS: z.string(),
+  DATABASE_URL: z.string(),
+  REDIS_HOST: z.string(),
+  REDIS_PORT: z.string(),
+  REDIS_PASSWORD: z.string(),
+  SALT_ROUNDS: z.string(),
+  ACCESS_TOKEN_SECRET: z.string(),
+  REFRESH_TOKEN_SECRET: z.string(),
+});
+
 declare module "bun" {
-  interface Env {
-    PORT: string;
-    POSTGRES_USER: string;
-    POSTGRES_PASSWORD: string;
-    POSTGRES_DB: string;
-    POSTGRES_HOST: string;
-    POSTGRES_PORT: string;
-    POSTGRES_HOST_AUTH_METHOD: string;
-    POSTGRES_INITDB_ARGS: string;
-    DATABASE_URL: string;
-    SALT_ROUNDS: string;
-    ACCESS_TOKEN_SECRET: string;
-    REFRESH_TOKEN_SECRET: string;
-  }
+  interface Env extends z.infer<typeof envSchema> {}
 }

@@ -1,24 +1,6 @@
 import type { Env } from "bun";
 
-interface ISettings {
-  port: number;
-  db: {
-    url: string;
-  };
-  hash: {
-    saltRounds: number;
-  };
-  jwt: {
-    accessToken: {
-      secret: string;
-    };
-    refreshToken: {
-      secret: string;
-    };
-  };
-}
-
-function getEnv(key: keyof Env, fallback?: string) {
+function getEnv(key: keyof Env, fallback?: string): string {
   const value = process.env[key];
   if (!value) {
     if (fallback) return fallback;
@@ -27,7 +9,7 @@ function getEnv(key: keyof Env, fallback?: string) {
   return value;
 }
 
-const settings: ISettings = {
+const settings = {
   port: Number.parseInt(getEnv("PORT", "3000")),
   db: {
     url: getEnv("DATABASE_URL"),
@@ -42,6 +24,11 @@ const settings: ISettings = {
     refreshToken: {
       secret: getEnv("REFRESH_TOKEN_SECRET", "refresh-token-secret"),
     },
+  },
+  redis: {
+    host: getEnv("REDIS_HOST", "localhost"),
+    port: Number.parseInt(getEnv("REDIS_PORT", "6380")),
+    password: getEnv("REDIS_PASSWORD", "password123"),
   },
 };
 
