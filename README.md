@@ -1,12 +1,12 @@
-# bun-hono-api
+## bun-hono_api
 
-To install dependencies:
+Install dependencies:
 
 ```bash
 bun install
 ```
 
-To run the server:
+Run the server:
 
 ```bash
 bun run docker:dev # builds and runs PostgreSQL database container
@@ -32,4 +32,19 @@ bun run docker:purge # stops running database container and removes its volumes 
 
 ```
 
+## bun-vite-react_client
+
+Install dependencies
+
+```bash
+cd client
+bun install
+```
+
+Run the app:
+
+```bash
+cd client
+bun run dev
+```
 This project was created using `bun init` in bun v1.1.21. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
